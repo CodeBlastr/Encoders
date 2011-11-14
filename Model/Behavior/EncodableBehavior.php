@@ -42,46 +42,56 @@ class EncodableBehavior extends ModelBehavior {
 		#debug($model->data);break;
 		
 		if($uploaded_file) {
-			$SafeFileName = $model->data['Media']['submittedfile']['name'];
+			$safeFileName = $model->data['Media']['submittedfile']['name'];
 		} else {
-			$SafeFileName = $this->getFileName($model->data['Media']['submittedurl']) . $this->getFileExtension($model->data['Media']['submittedurl']);
+			$safeFileName = $this->getFileName($model->data['Media']['submittedurl']) . $this->getFileExtension($model->data['Media']['submittedurl']);
 			$model->data['Media']['publicMediaFilePath'] = $model->data['Media']['submittedurl'];
 		}
 		
 			
 		// rename file
-		$SafeFileName = str_replace("#", "No.", $SafeFileName);
-		$SafeFileName = str_replace("$", "Dollar", $SafeFileName);
-		$SafeFileName = str_replace("%", "Percent", $SafeFileName);
-		$SafeFileName = str_replace("^", "", $SafeFileName);
-		$SafeFileName = str_replace("&", "and", $SafeFileName);
-		$SafeFileName = str_replace("*", "", $SafeFileName);
-		$SafeFileName = str_replace("?", "", $SafeFileName);
+		$safeFileName = str_replace("#", "No.", $safeFileName);
+		$safeFileName = str_replace("$", "Dollar", $safeFileName);
+		$safeFileName = str_replace("%", "Percent", $safeFileName);
+		$safeFileName = str_replace("^", "", $safeFileName);
+		$safeFileName = str_replace("&", "and", $safeFileName);
+		$safeFileName = str_replace("*", "", $safeFileName);
+		$safeFileName = str_replace("?", "", $safeFileName);
+		$safeFileName = str_replace(" ", "-", $safeFileName);
 		
-		$model->data['Media']['SafeFileName'] = $this->getFileName($SafeFileName);
+		$model->data['Media']['SafeFileName'] = $this->getFileName($safeFileName);
 		#$model->data['Media']['file_extension'] = getFileExtension($SafeFileName);
 		
-		# D:\wamp\www\zuha.git\sites\masspire.com\View\Themed\Default\webroot\media
-		# D:\wamp\www\zuha.git\app\webroot\sites\masspire.com\View\Themed\Default\webroot\media\uploads
 		
 		if($uploaded_file) {
-			$upload_directory = ROOT.DS.SITE_DIR.DS.'View'.DS.'Themed'.DS.'Default'.DS.WEBROOT_DIR . DS . 'media' . DS . 'uploads' . DS . $this->getFileExtension($SafeFileName);
+			$upload_directory = ROOT.DS.SITE_DIR.DS.'View'.DS.'Themed'.DS.'Default'.DS.WEBROOT_DIR . DS . 'media' . DS . 'uploads' . DS . $this->getFileExtension($safeFileName);
 			if(!is_dir($upload_directory)) mkdir($upload_directory, 0777);
-			$file_saved_locally = move_uploaded_file($model->data['Media']['submittedfile']['tmp_name'], $upload_directory . DS . $SafeFileName);
-			$model->data['Media']['publicMediaFilePath'] = 'http://' . $_SERVER['HTTP_HOST'] . '/theme/default/media/uploads/' . $this->getFileExtension($SafeFileName) . '/' . $SafeFileName;
+			$file_saved_locally = move_uploaded_file($model->data['Media']['submittedfile']['tmp_name'], $upload_directory . DS . $safeFileName);
+			$model->data['Media']['publicMediaFilePath'] = 'http://' . $_SERVER['HTTP_HOST'] . '/theme/default/media/uploads/' . $this->getFileExtension($safeFileName) . '/' . $safeFileName;
 		}
 		
 		if($file_saved_locally) {
+			// send the file to the encoder
 			$encoder = new $this->type();
 			$response = $encoder->save($model->data);
+			
 			#debug($response);
+			
 			$model->data['Media']['zen_job_id'] = $response['id'];
-			if(is_array($response['outputs'])) {
-				$model->data['Media']['zen_output_id'] = implode(",", $response['outputs']);
+			if( isset($response['outputs'][1]) ) {
+				// we have multiple output formats
+				foreach($response['outputs'] as $output) {
+					$model->data['Media']['zen_output_id'] .= $output['id'] . ',';
+				}
+				$model->data['Media']['zen_output_id'] = rtrim($model->data['Media']['zen_output_id'], ',');
 			} else {
-				$model->data['Media']['zen_output_id'] = $response['outputs'];
+				// we just have one output format
+				$model->data['Media']['zen_output_id'] = $response['outputs'][0]['id'];
 			}
-		
+			
+			#debug($response['outputs']['id']);
+			#debug($model->data['Media']['zen_output_id']);
+			
 			return $model->data;
 		} else {
 			return false;
