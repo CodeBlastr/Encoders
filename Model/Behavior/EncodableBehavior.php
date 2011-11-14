@@ -61,6 +61,7 @@ class EncodableBehavior extends ModelBehavior {
 		
 		$model->data['Media']['SafeFileName'] = $this->getFileName($safeFileName);
 		#$model->data['Media']['file_extension'] = getFileExtension($SafeFileName);
+       		$model->data['Media']['filename'] = $safeFileName;
 		
 		
 		if($uploaded_file) {

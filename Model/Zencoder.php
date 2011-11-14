@@ -54,7 +54,7 @@ class Zencoder extends AppModel {
 			'private' => 'false', // Enable privacy mode for a job.
 			'download_connections' => '5', // Utilize multiple, simultaneous connections for download acceleration (in some circumstances).
 			'pass_through' => '', // Optional information to store alongside this job.
-			'grouping' => '', // A report grouping for this job.
+			'grouping' => '' // A report grouping for this job.
 		);
 		
 		if($integrationMode == TRUE) {
@@ -64,13 +64,13 @@ class Zencoder extends AppModel {
 
 		if($data['Media']['type'] == 'V') {
 			
-			$_MEDIA_SERVER .= ROOT.DS.SITE_DIR.DS.'View'.DS.'Themed'.DS.'Default'.DS.WEBROOT_DIR.DS.'media'.DS . 'streams'. DS .'video' . DS ;
-			
+			$_MEDIA_SERVER .= basename(ROOT).DS.SITE_DIR.DS.'View'.DS.'Themed'.DS.'Default'.DS.WEBROOT_DIR.DS.'media'.DS . 'streams'. DS .'video' . DS ;
+
 			$requestParams['outputs'] = array( // An array or hash of output settings.
 					array( // output version 1
-						'notifications' => array('format' => 'json', 'url' => 'http://' . $_SERVER['HTTP_HOST'] . '/media/media/notification'),
 						'label' => 'web',
-						'url' => $_MEDIA_SERVER . $data['Media']['SafeFileName'] . '.mp4' // destination of the encoded file
+						'url' => $_MEDIA_SERVER . $data['Media']['SafeFileName'] . '.mp4', // destination of the encoded file
+						'notifications' => array('format' => 'json', 'url' => 'http://' . $_SERVER['HTTP_HOST'] . '/media/media/notification')
 					),
 	//				array( // output version 2
 	//					'label' => 'dvd',
@@ -83,13 +83,13 @@ class Zencoder extends AppModel {
 		
 		} elseif($data['Media']['type'] == 'A') {
 			
-			$_MEDIA_SERVER .= ROOT.DS.SITE_DIR.DS.'View'.DS.'Themed'.DS.'Default'.DS.WEBROOT_DIR.DS.'media'.DS.'streams' . DS .'audio' . DS ;
+			$_MEDIA_SERVER .= basename(ROOT).DS.SITE_DIR.DS.'View'.DS.'Themed'.DS.'Default'.DS.WEBROOT_DIR.DS.'media'.DS.'streams' . DS .'audio' . DS ;
 
 			$requestParams['outputs'] = array( // An array or hash of output settings.
 					array( // output version 1
-						'notifications' => array('format' => 'json', 'url' => 'http://' . $_SERVER['HTTP_HOST'] . '/media/media/notification'),
 						'label' => 'web',
-						'url' => $_MEDIA_SERVER . $data['Media']['SafeFileName'] . '.mp3' // destination of the encoded file
+						'url' => $_MEDIA_SERVER . $data['Media']['SafeFileName'] . '.mp3', // destination of the encoded file
+						'notifications' => array('format' => 'json', 'url' => 'http://' . $_SERVER['HTTP_HOST'] . '/media/media/notification')
 					),
 	//				array( // output version 2
 	//					'label' => 'dvd',
@@ -218,7 +218,7 @@ class Zencoder extends AppModel {
 	/*	The return will contain one or more of the following keys: state, current_event, and progress.
 	*	Valid states include: Waiting, Pending, Assigning, Processing, Finished, Failed, Cancelled.
 	*	Events include: Downloading and Inspecting.
-	*	The progress number is the percent complete of the current event â€“ so if the event is Downloading, and progress is 99.3421, then the file is almost finished downloading, but hasn't started Inspecting yet.
+	*	The progress number is the percent complete of the current event – so if the event is Downloading, and progress is 99.3421, then the file is almost finished downloading, but hasn't started Inspecting yet.
 	*
 	*	Don't use for AJAX... we should use a different, read-only URL for that.
 	*
@@ -248,7 +248,7 @@ class Zencoder extends AppModel {
 	
 	/*	Valid states include: Waiting, Queued, Assigning, Processing, Finished, Failed, Cancelled and No Input.
 	*	Events include: Inspecting, Downloading, Transcoding and Uploading.
-	*	The progress number is the percent complete of the current event â€“ so if the event is Transcoding, and progress is 99.3421, then the file is almost finished transcoding, but hasn't started Uploading yet.
+	*	The progress number is the percent complete of the current event – so if the event is Transcoding, and progress is 99.3421, then the file is almost finished transcoding, but hasn't started Uploading yet.
 	*
 	*	https://app.zencoder.com/docs/api/outputs/progress
 	*/
