@@ -14,6 +14,7 @@ class EncodableBehavior extends ModelBehavior {
 		$this->type = !empty($settings['type']) ? $settings['type'] : $this->type;
 	}
 
+
 	function beforeSave(&$model) {
 		#override fields before Media model saves it
 		
@@ -25,13 +26,13 @@ class EncodableBehavior extends ModelBehavior {
 			unset($model->data['Media']['submittedurl']);
 			$uploaded_file = true;
 			
-			if(!in_array(getFileExtension($model->data['Media']['submittedfile']['name']), $Supported_Extensions)) return false;
+			if(!in_array($this->getFileExtension($model->data['Media']['submittedfile']['name']), $Supported_Extensions)) return false;
 			
 			#debug($model->data['Media']['submittedfile']); break;
 		} elseif($model->data['Media']['submittedurl']) {
 			unset($model->data['Media']['submittedfile']);
 			
-			if(!in_array(getFileExtension($model->data['Media']['submittedurl']), $Supported_Extensions)) return false;
+			if(!in_array($this->getFileExtension($model->data['Media']['submittedurl']), $Supported_Extensions)) return false;
 			
 			#debug($model->data['Media']['submittedurl']); break;
 		} else {
@@ -43,7 +44,7 @@ class EncodableBehavior extends ModelBehavior {
 		if($uploaded_file) {
 			$SafeFileName = $model->data['Media']['submittedfile']['name'];
 		} else {
-			$SafeFileName = getFileName($model->data['Media']['submittedurl']) . getFileExtension($model->data['Media']['submittedurl']);
+			$SafeFileName = $this->getFileName($model->data['Media']['submittedurl']) . $this->getFileExtension($model->data['Media']['submittedurl']);
 			$model->data['Media']['publicMediaFilePath'] = $model->data['Media']['submittedurl'];
 		}
 		
@@ -57,20 +58,32 @@ class EncodableBehavior extends ModelBehavior {
 		$SafeFileName = str_replace("*", "", $SafeFileName);
 		$SafeFileName = str_replace("?", "", $SafeFileName);
 		
-		$model->data['Media']['SafeFileName'] = getFileName($SafeFileName);
+		$model->data['Media']['SafeFileName'] = $this->getFileName($SafeFileName);
 		#$model->data['Media']['file_extension'] = getFileExtension($SafeFileName);
 		
+		# D:\wamp\www\zuha.git\sites\masspire.com\View\Themed\Default\webroot\media
+		# D:\wamp\www\zuha.git\app\webroot\sites\masspire.com\View\Themed\Default\webroot\media\uploads
+		
 		if($uploaded_file) {
-			move_uploaded_file($model->data['Media']['submittedfile']['tmp_name'], SITE_DIR . DS . 'media' . DS . 'uploads' . DS . $SafeFileName);
-			$model->data['Media']['publicMediaFilePath'] = 'http://' . $_SERVER['HTTP_HOST'] . '/theme/default/media/uploads/' . getFileExtension($SafeFileName) . '/' . $SafeFileName;
+			$upload_directory = ROOT.DS.SITE_DIR.DS.'View'.DS.'Themed'.DS.'Default'.DS.WEBROOT_DIR . DS . 'media' . DS . 'uploads' . DS . $this->getFileExtension($SafeFileName);
+			if(!is_dir($upload_directory)) mkdir($upload_directory, 0777);
+			$file_saved_locally = move_uploaded_file($model->data['Media']['submittedfile']['tmp_name'], $upload_directory . DS . $SafeFileName);
+			$model->data['Media']['publicMediaFilePath'] = 'http://' . $_SERVER['HTTP_HOST'] . '/theme/default/media/uploads/' . $this->getFileExtension($SafeFileName) . '/' . $SafeFileName;
 		}
 		
+		if($file_saved_locally) {
+			$encoder = new $this->type();
+			$response = $encoder->save($model->data);
+			
+			$model->data['Media']['zen_job_id'] = $response['id'];
+			$model->data['Media']['zen_output_id'] = implode(",", $response['outputs']);
 		
-		$encoder = new $this->type();
-		$model->data['filename'] = $encoder->save($model->data);
+			return $model->data;
+		} else {
+			return false;
+		}
 		
-		return true;
-	}
+	}//beforeSave()
 	
 	
 	/**

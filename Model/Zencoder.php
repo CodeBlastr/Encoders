@@ -10,16 +10,16 @@ App::uses('HttpSocket', 'Network/Http');
 class Zencoder extends AppModel {
 	
 	public $name = 'Zencoder';
-	
+	var $useTable = false;
 	
 	var $_API_KEY = 'd7e9c0967186d3f2ee6f98a9e10ad0db';
-	var $_MEDIA_SERVER = 'ftp://user:password@ftp.example.com/';
+	var $_ZENDCODER_URL = 'https://app.zencoder.com/api/v2/'; //('http://ec2-107-22-67-64.compute-1.amazonaws.com/'); # zencoder's debug server
+	var $_TEST_MODE = TRUE;
 	
 	
 	public function __construct($config = null) {
 		#parent::__construct($config);
-		$this->connection = new HttpSocket('https://app.zencoder.com/api/v2/'); # /v2/ ?
-		#parent::__construct($config);
+		$this->connection = new HttpSocket();
 		
 	}//__construct()
 	
@@ -41,9 +41,10 @@ class Zencoder extends AppModel {
 	/*	https://app.zencoder.com/docs/api/jobs/create
 	*/
 	public function save($data) {
+		#debug($data);break;
 		
-		debug($data);break;
-
+		$_MEDIA_SERVER = Configure::read('Media.mediaserver');
+		
 		$requestParams = array( // see: https://app.zencoder.com/docs/api/encoding/general-output-settings
 			# REQUIRED
 			'api_key' => $this->_API_KEY, // The API key for your Zencoder account.
@@ -53,17 +54,20 @@ class Zencoder extends AppModel {
 			'private' => 'false', // Enable privacy mode for a job.
 			'download_connections' => '5', // Utilize multiple, simultaneous connections for download acceleration (in some circumstances).
 			'pass_through' => '', // Optional information to store alongside this job.
-			'mock' => 'true', // Send a mocked job request. (return data but don't process)
 			'grouping' => '', // A report grouping for this job.
-			
-			'test' => 1, // Enable test mode ("Integration Mode") for a job.
+			'notifications' => array('http://' . $_SERVER['HTTP_HOST'] . '/media/media/notification')
 		);
+		
+		if($this->_TEST_MODE === TRUE) {
+			$requestParams['mock'] = 'true'; // Send a mocked job request. (return data but don't process)
+			$requestParams['test'] = 1; // Enable test mode ("Integration Mode") for a job.	
+		}
 
 		if($data['Media']['type'] == 'V') {
 			$requestParams['outputs'] = array( // An array or hash of output settings.
 					array( // output version 1
 						'label' => 'web',
-						'url' => $this->_MEDIA_SERVER . $data['Media']['SafeFileName'] . '.mp4' // destination of the encoded file
+						'url' => $_MEDIA_SERVER . $data['Media']['SafeFileName'] . '.mp4' // destination of the encoded file
 					),
 	//				array( // output version 2
 	//					'label' => 'dvd',
@@ -72,12 +76,15 @@ class Zencoder extends AppModel {
 	//					'label' => 'mobile'
 	//				)
 			);
+
+			$_MEDIA_SERVER .= ROOT.DS.SITE_DIR.DS.'View'.DS.'Themed'.DS.'Default'.DS.WEBROOT_DIR.DS.'media'.DS . 'streams'. DS .'video';
+
 			
 		} elseif($data['Media']['type'] == 'A') {
 			$requestParams['outputs'] = array( // An array or hash of output settings.
 					array( // output version 1
 						'label' => 'web',
-						'url' => $this->_MEDIA_SERVER . $data['Media']['SafeFileName'] . '.mp3' // destination of the encoded file
+						'url' => $_MEDIA_SERVER . $data['Media']['SafeFileName'] . '.mp3' // destination of the encoded file
 					),
 	//				array( // output version 2
 	//					'label' => 'dvd',
@@ -86,14 +93,26 @@ class Zencoder extends AppModel {
 	//					'label' => 'mobile'
 	//				)
 			);
+
+			$_MEDIA_SERVER .= ROOT.DS.SITE_DIR.DS.'View'.DS.'Themed'.DS.'Default'.DS.WEBROOT_DIR.DS.'media'.DS.'streams' . DS .'audio';
+
 		}
 		
 		$url = 'jobs';
 		
-		$this->connection->_buildHeader(array('Content-Type' => 'application/json'));
-		$response = json_decode($this->connection->post($url), $requestParams);
+		$requestParams = json_encode($requestParams);
+		#debug($requestParams);
+		$response = $this->connection->post($this->_ZENDCODER_URL . $url, $requestParams, array('header' => array('Content-Type' => 'application/json')));
+		debug($response);
 		
-		debug($response); break;
+		if($response->code == '201') {
+			// job created.  Should return: JSON {  "id": "1234",  "outputs": [    {      "id": "4321"    }  ]}
+			return json_decode($response->body);
+			
+		} else {
+			#debug($response);
+			return FALSE;
+		}
 		
 	}//createJob()
 	
@@ -108,7 +127,7 @@ class Zencoder extends AppModel {
 	public function listJobs() {
 		
 		$url = 'jobs.json?api_key=' . $this->_API_KEY;
-		$response = json_decode($this->connection->get($url), true);
+		$response = json_decode($this->connection->get($this->_ZENDCODER_URL . $url), true);
 		
 		return $response;
 		
@@ -124,7 +143,7 @@ class Zencoder extends AppModel {
 	public function getJobDetails($jobID) {
 		
 		$url = 'jobs/' . $jobID . '.json?api_key=' . $this->_API_KEY;
-		$response = json_decode($this->connection->get($url), true);
+		$response = json_decode($this->connection->get($this->_ZENDCODER_URL . $url), true);
 		
 		return $response;
 		
@@ -142,7 +161,7 @@ class Zencoder extends AppModel {
 	public function resubmitJob($jobID) {
 		
 		$url = 'jobs/'. $jobID .'/resubmit.json?api_key=' . $this->_API_KEY;
-		$response = $this->connection->get($url);
+		$response = $this->connection->get($this->_ZENDCODER_URL . $url);
 		
 		return $response;
 		
@@ -158,7 +177,7 @@ class Zencoder extends AppModel {
 	public function cancelJob($jobID) {
 		
 		$url = 'jobs/' . $jobID . '/cancel.json?api_key=' . $this->_API_KEY;
-		$response = $this->connection->post($url);
+		$response = $this->connection->post($this->_ZENDCODER_URL . $url);
 		
 		return $response;
 		
@@ -174,7 +193,7 @@ class Zencoder extends AppModel {
 	public function deleteJob($jobID) {
 		
 		$url = 'jobs/' . $jobID . '?api_key=' . $this->_API_KEY;
-		$response = $this->connection->delete($url);
+		$response = $this->connection->delete($this->_ZENDCODER_URL . $url);
 		
 		return $response;
 		
@@ -186,7 +205,7 @@ class Zencoder extends AppModel {
 	public function getInputDetails($inputID) {
 		
 		$url = 'inputs/' . $inputID . '.json?api_key=' . $this->_API_KEY;
-		$response = json_decode($this->connection->get($url), true);
+		$response = json_decode($this->connection->get($this->_ZENDCODER_URL . $url), true);
 		
 		return $response;
 		
@@ -205,7 +224,7 @@ class Zencoder extends AppModel {
 	public function getInputProgress($inputID) {
 		
 		$url = 'inputs/' . $inputID . '/progress.json?api_key=' . $this->_API_KEY;
-		$response = json_decode($this->connection->get($url), true);
+		$response = json_decode($this->connection->get($this->_ZENDCODER_URL . $url), true);
 		
 		return $response;
 		
@@ -217,7 +236,7 @@ class Zencoder extends AppModel {
 	public function getOutputDetails($outputID) {
 		
 		$url = 'outputs/' . $inputID . '.json?api_key=' . $this->_API_KEY;
-		$response = json_decode($this->connection->get($url), true);
+		$response = json_decode($this->connection->get($this->_ZENDCODER_URL . $url), true);
 		
 		return $response;
 		
@@ -233,7 +252,7 @@ class Zencoder extends AppModel {
 	public function getOutputProgress($outputID) {
 		
 		$url = 'outputs/' . $inputID . '/progress.json?api_key=' . $this->_API_KEY;
-		$response = json_decode($this->connection->get($url), true);
+		$response = json_decode($this->connection->get($this->_ZENDCODER_URL . $url), true);
 		
 		return $response;
 		
@@ -255,7 +274,7 @@ class Zencoder extends AppModel {
 		if(!empty($conditions['to'])) $url .= '&to=' . $conditions['to'];
 		if(!empty($conditions['from'])) $url .= '&grouping=' . $conditions['grouping'];
 		
-		$response = json_decode($this->connection->get($url), true);
+		$response = json_decode($this->connection->get($this->_ZENDCODER_URL . $url), true);
 		
 		return $response;
 		
