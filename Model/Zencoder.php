@@ -55,7 +55,7 @@ class Zencoder extends AppModel {
 			'download_connections' => '5', // Utilize multiple, simultaneous connections for download acceleration (in some circumstances).
 			'pass_through' => '', // Optional information to store alongside this job.
 			'grouping' => '', // A report grouping for this job.
-			'notifications' => array('http://' . $_SERVER['HTTP_HOST'] . '/media/media/notification')
+			'notifications' => array('format' => 'json', 'url' => 'http://' . $_SERVER['HTTP_HOST'] . '/media/media/notification')
 		);
 		
 		if($integrationMode == TRUE) {
