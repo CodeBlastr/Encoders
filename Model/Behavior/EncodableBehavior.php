@@ -76,7 +76,11 @@ class EncodableBehavior extends ModelBehavior {
 			$response = $encoder->save($model->data);
 			#debug($response);
 			$model->data['Media']['zen_job_id'] = $response['id'];
-			$model->data['Media']['zen_output_id'] = implode(",", $response['outputs']);
+			if(is_array($response['outputs'])) {
+				$model->data['Media']['zen_output_id'] = implode(",", $response['outputs']);
+			} else {
+				$model->data['Media']['zen_output_id'] = $response['outputs'];
+			}
 		
 			return $model->data;
 		} else {
