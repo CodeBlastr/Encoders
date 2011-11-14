@@ -55,7 +55,6 @@ class Zencoder extends AppModel {
 			'download_connections' => '5', // Utilize multiple, simultaneous connections for download acceleration (in some circumstances).
 			'pass_through' => '', // Optional information to store alongside this job.
 			'grouping' => '', // A report grouping for this job.
-			'notifications' => array('format' => 'json', 'url' => 'http://' . $_SERVER['HTTP_HOST'] . '/media/media/notification')
 		);
 		
 		if($integrationMode == TRUE) {
@@ -69,6 +68,7 @@ class Zencoder extends AppModel {
 			
 			$requestParams['outputs'] = array( // An array or hash of output settings.
 					array( // output version 1
+						'notifications' => array('format' => 'json', 'url' => 'http://' . $_SERVER['HTTP_HOST'] . '/media/media/notification'),
 						'label' => 'web',
 						'url' => $_MEDIA_SERVER . $data['Media']['SafeFileName'] . '.mp4' // destination of the encoded file
 					),
@@ -87,6 +87,7 @@ class Zencoder extends AppModel {
 
 			$requestParams['outputs'] = array( // An array or hash of output settings.
 					array( // output version 1
+						'notifications' => array('format' => 'json', 'url' => 'http://' . $_SERVER['HTTP_HOST'] . '/media/media/notification'),
 						'label' => 'web',
 						'url' => $_MEDIA_SERVER . $data['Media']['SafeFileName'] . '.mp3' // destination of the encoded file
 					),
