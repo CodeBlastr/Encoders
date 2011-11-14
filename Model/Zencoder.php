@@ -64,6 +64,9 @@ class Zencoder extends AppModel {
 		}
 
 		if($data['Media']['type'] == 'V') {
+			
+			$_MEDIA_SERVER .= ROOT.DS.SITE_DIR.DS.'View'.DS.'Themed'.DS.'Default'.DS.WEBROOT_DIR.DS.'media'.DS . 'streams'. DS .'video' . DS ;
+			
 			$requestParams['outputs'] = array( // An array or hash of output settings.
 					array( // output version 1
 						'label' => 'web',
@@ -77,10 +80,11 @@ class Zencoder extends AppModel {
 	//				)
 			);
 
-			$_MEDIA_SERVER .= ROOT.DS.SITE_DIR.DS.'View'.DS.'Themed'.DS.'Default'.DS.WEBROOT_DIR.DS.'media'.DS . 'streams'. DS .'video';
-
-			
+		
 		} elseif($data['Media']['type'] == 'A') {
+			
+			$_MEDIA_SERVER .= ROOT.DS.SITE_DIR.DS.'View'.DS.'Themed'.DS.'Default'.DS.WEBROOT_DIR.DS.'media'.DS.'streams' . DS .'audio' . DS ;
+
 			$requestParams['outputs'] = array( // An array or hash of output settings.
 					array( // output version 1
 						'label' => 'web',
@@ -94,8 +98,6 @@ class Zencoder extends AppModel {
 	//				)
 			);
 
-			$_MEDIA_SERVER .= ROOT.DS.SITE_DIR.DS.'View'.DS.'Themed'.DS.'Default'.DS.WEBROOT_DIR.DS.'media'.DS.'streams' . DS .'audio';
-
 		}
 		
 		$url = 'jobs';
@@ -103,7 +105,7 @@ class Zencoder extends AppModel {
 		$requestParams = json_encode($requestParams);
 		#debug($requestParams);
 		$response = $this->connection->post($this->_ZENDCODER_URL . $url, $requestParams, array('header' => array('Content-Type' => 'application/json')));
-		debug($response);
+		#debug($response);
 		
 		if($response->code == '201') {
 			// job created.  Should return: JSON {  "id": "1234",  "outputs": [    {      "id": "4321"    }  ]}
