@@ -14,8 +14,7 @@ class Zencoder extends AppModel {
 	
 	var $_API_KEY = 'd7e9c0967186d3f2ee6f98a9e10ad0db';
 	var $_ZENDCODER_URL = 'https://app.zencoder.com/api/v2/'; //('http://ec2-107-22-67-64.compute-1.amazonaws.com/'); # zencoder's debug server
-	var $_TEST_MODE = TRUE;
-	
+
 	
 	public function __construct($config = null) {
 		#parent::__construct($config);
@@ -44,6 +43,7 @@ class Zencoder extends AppModel {
 		#debug($data);break;
 		
 		$_MEDIA_SERVER = Configure::read('Media.mediaserver');
+		$integrationMode = Configure::read('Media.integrationMode');
 		
 		$requestParams = array( // see: https://app.zencoder.com/docs/api/encoding/general-output-settings
 			# REQUIRED
@@ -58,7 +58,7 @@ class Zencoder extends AppModel {
 			'notifications' => array('http://' . $_SERVER['HTTP_HOST'] . '/media/media/notification')
 		);
 		
-		if($this->_TEST_MODE === TRUE) {
+		if($integrationMode == TRUE) {
 			$requestParams['mock'] = 'true'; // Send a mocked job request. (return data but don't process)
 			$requestParams['test'] = 1; // Enable test mode ("Integration Mode") for a job.	
 		}
@@ -109,7 +109,7 @@ class Zencoder extends AppModel {
 		
 		if($response->code == '201') {
 			// job created.  Should return: JSON {  "id": "1234",  "outputs": [    {      "id": "4321"    }  ]}
-			return json_decode($response->body);
+			return json_decode($response->body, true);
 			
 		} else {
 			#debug($response);

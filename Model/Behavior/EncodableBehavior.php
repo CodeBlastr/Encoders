@@ -74,7 +74,7 @@ class EncodableBehavior extends ModelBehavior {
 		if($file_saved_locally) {
 			$encoder = new $this->type();
 			$response = $encoder->save($model->data);
-			
+			#debug($response);
 			$model->data['Media']['zen_job_id'] = $response['id'];
 			$model->data['Media']['zen_output_id'] = implode(",", $response['outputs']);
 		
