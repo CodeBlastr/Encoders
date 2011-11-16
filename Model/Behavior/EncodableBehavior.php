@@ -1,223 +1,166 @@
 <?php
 App::uses('Zencoder', 'Encoders.Model');
+/**
+ * @author <joel@razorit.com>
+ */
 class EncodableBehavior extends ModelBehavior {
 
 
 	var $type = 'Zencoder';
 	var $userData = array();
-	
-	var $Supported_Video_Extensions = array('mpg', 'mov', 'wmv', 'rm', '3g2', '3gp', '3gp2', '3gpp', '3gpp2', 'avi', 'divx', 'dv', 'dv-avi', 'dvx', 'f4v', 'flv', 'h264', 'hdmov', 'm4v', 'mkv', 'mp4', 'mp4v', 'mpe', 'mpeg', 'mpeg4', 'mpg', 'nsv', 'qt', 'swf', 'xvid');
-	var $Supported_Audio_Extensions = array('aif', 'mid', 'midi', 'mka', 'mp1', 'mp2', 'mp3', 'mpa', 'wav', 'aac', 'flac', 'ogg', 'ra', 'raw', 'wma');
-	
+
+	var $supportedVideoExtensions = array('mpg', 'mov', 'wmv', 'rm', '3g2', '3gp', '3gp2', '3gpp', '3gpp2', 'avi', 'divx', 'dv', 'dv-avi', 'dvx', 'f4v', 'flv', 'h264', 'hdmov', 'm4v', 'mkv', 'mp4', 'mp4v', 'mpe', 'mpeg', 'mpeg4', 'mpg', 'nsv', 'qt', 'swf', 'xvid');
+	var $supportedAudioExtensions = array('aif', 'mid', 'midi', 'mka', 'mp1', 'mp2', 'mp3', 'mpa', 'wav', 'aac', 'flac', 'ogg', 'ra', 'raw', 'wma');
+
 
 	function setup(&$model, $settings = array()) {
 		$this->type = !empty($settings['type']) ? $settings['type'] : $this->type;
 	}
 
 
-	function beforeSave(&$model) {
-		#override fields before Media model saves it
-		
+	function beforeSave(&$model) { #override fields before Media model saves it
+            
+                $uuid = $model->_generateUUID(); /** @todo Perhaps this should be in the Encoder Model instead.. */
+
 		#debug($model->data);break;
-		
-		$Supported_Extensions = array_merge($this->Supported_Video_Extensions, $this->Supported_Audio_Extensions);
-		
+
+		$supportedExtensions = array_merge($this->supportedVideoExtensions, $this->supportedAudioExtensions);
+
 		if($model->data['Media']['submittedfile']['size'] > 0) {
+                    
 			unset($model->data['Media']['submittedurl']);
-			$uploaded_file = true;
-			
-			if(!in_array($this->getFileExtension($model->data['Media']['submittedfile']['name']), $Supported_Extensions)) return false;
-			
+                        
+			$uploadedFile = true;
+                        $fileExtension = $this->getFileExtension($model->data['Media']['submittedfile']['name']);
+
+			if(!in_array($fileExtension, $supportedExtensions)) return false;
+
 			#debug($model->data['Media']['submittedfile']); break;
 		} elseif($model->data['Media']['submittedurl']) {
+                    
 			unset($model->data['Media']['submittedfile']);
-			
-			if(!in_array($this->getFileExtension($model->data['Media']['submittedurl']), $Supported_Extensions)) return false;
-			
+                        
+                        $fileExtension = $this->getFileExtension($model->data['Media']['submittedurl']);
+
+			if(!in_array($this->getFileExtension($model->data['Media']['submittedurl']), $supportedExtensions)) return false;
+
 			#debug($model->data['Media']['submittedurl']); break;
 		} else {
 			return false;
 		}
-		
+
+                
 		#debug($model->data);break;
-		
-		if($uploaded_file) {
-			$safeFileName = $model->data['Media']['submittedfile']['name'];
+
+                // this will be the base of the filename of the media file that we store locally and send to the encoder
+		$model->data['Media']['safeFileName'] = $uuid;
+
+
+		if($uploadedFile) {
+                    
+                    // create new filetype-based upload directory if it doesn't exist and save the uploaded file locally
+                    $uploadDirectory = ROOT.DS.SITE_DIR.DS.'View'.DS.'Themed'.DS.'Default'.DS.WEBROOT_DIR . DS . 'media' . DS . 'uploads' . DS . $fileExtension;
+                    if(!is_dir($uploadDirectory)) mkdir($uploadDirectory, 0777);
+                    $fileSavedLocally = move_uploaded_file($model->data['Media']['submittedfile']['tmp_name'], $uploadDirectory . DS . $uuid.'.'.$fileExtension);
+                    
+                    // set the Public URL of the local file so that the encoder can download it
+                    $model->data['Media']['publicMediaFilePath'] = 'http://' . $_SERVER['HTTP_HOST'] . '/theme/default/media/uploads/' . $fileExtension . '/' . $uuid.'.'.$fileExtension;
+                    
 		} else {
-			$safeFileName = $this->getFileName($model->data['Media']['submittedurl']) . $this->getFileExtension($model->data['Media']['submittedurl']);
-			$model->data['Media']['publicMediaFilePath'] = $model->data['Media']['submittedurl'];
-		}
-		
-			
-		// rename file
-		$safeFileName = str_replace("#", "No.", $safeFileName);
-		$safeFileName = str_replace("$", "Dollar", $safeFileName);
-		$safeFileName = str_replace("%", "Percent", $safeFileName);
-		$safeFileName = str_replace("^", "", $safeFileName);
-		$safeFileName = str_replace("&", "and", $safeFileName);
-		$safeFileName = str_replace("*", "", $safeFileName);
-		$safeFileName = str_replace("?", "", $safeFileName);
-		$safeFileName = str_replace(" ", "-", $safeFileName);
-		
-		$model->data['Media']['SafeFileName'] = $this->getFileName($safeFileName);
-		#$model->data['Media']['file_extension'] = getFileExtension($SafeFileName);
-       		$model->data['Media']['filename'] = $safeFileName;
-		
-		
-		if($uploaded_file) {
-			$upload_directory = ROOT.DS.SITE_DIR.DS.'View'.DS.'Themed'.DS.'Default'.DS.WEBROOT_DIR . DS . 'media' . DS . 'uploads' . DS . $this->getFileExtension($safeFileName);
-			if(!is_dir($upload_directory)) mkdir($upload_directory, 0777);
-			$file_saved_locally = move_uploaded_file($model->data['Media']['submittedfile']['tmp_name'], $upload_directory . DS . $safeFileName);
-			$model->data['Media']['publicMediaFilePath'] = 'http://' . $_SERVER['HTTP_HOST'] . '/theme/default/media/uploads/' . $this->getFileExtension($safeFileName) . '/' . $safeFileName;
-		}
-		
-		if($file_saved_locally) {
+                    // set the Public URL of the remote file so that the encoder can download it
+                    $model->data['Media']['publicMediaFilePath'] = $model->data['Media']['submittedurl'];
+                }
+                
+
+		if($fileSavedLocally) {
 			// send the file to the encoder
 			$encoder = new $this->type();
 			$response = $encoder->save($model->data);
-			
+
 			#debug($response);
-			
+                        
+                        // set the data we received from the encoder
 			$model->data['Media']['zen_job_id'] = $response['id'];
 			if( isset($response['outputs'][1]) ) {
 				// we have multiple output formats
 				foreach($response['outputs'] as $output) {
 					$model->data['Media']['zen_output_id'] .= $output['id'] . ',';
+                                        // ... or ...
+                                        $outputs[] = array('label' => $output['label'], 'zen_output_id' => $output['id']);
 				}
 				$model->data['Media']['zen_output_id'] = rtrim($model->data['Media']['zen_output_id'], ',');
 			} else {
 				// we just have one output format
 				$model->data['Media']['zen_output_id'] = $response['outputs'][0]['id'];
+                                // ... or ...
+                                $outputs = array('label' => $response['outputs'][0]['label'], 'zen_output_id' => $response['outputs'][0]['id']);
 			}
-			
+
 			#debug($response['outputs']['id']);
 			#debug($model->data['Media']['zen_output_id']);
-			
+
+                        
+                        // set the Media.type (audio|video)
+                        if(in_array($fileExtension, $this->supportedAudioExtensions)) $mediaType = 'audio';
+                        elseif(in_array($fileExtension, $this->supportedVideoExtensions)) $mediaType = 'video';
+                        $model->data['Media']['type'] = $mediaType;
+                        
+                        
+                        /* proposing that Media.filename is just an array of
+                         * the label (audioWeb|videoWeb), id (outputID), and encoded file extension
+                         * for each outputted file.
+                         */
+                        $model->data['Media']['filename'] = json_encode(
+                                    array(
+                                        'outputs' => $outputs
+                                    )
+                                );
+
+
 			return $model->data;
 		} else {
 			return false;
 		}
-		
+
 	}//beforeSave()
-	
-	
-	/**
-	 * Update the find methods so that we check against the used table that the current user is part of this item being searched.
-	 * @todo	I'm sure we will need some checks and stuff added to this.  (Right now this Project is Used, so make sure Project works if you change this function.)
-	 */
-	function beforeFind(&$model, $queryData) {
-		$userRole = CakeSession::read('Auth.User.user_role_id');
-		$userId = CakeSession::read('Auth.User.id');
-		//if ($userRole != 1) : 
-			// temporary until we find a better way
-			# this allows you to bypass the logged in user check (nocheck should equal the user id)
-			$userQuery = !empty($queryData['nocheck']) ? "Used.user_id = {$queryData['nocheck']}" : "Used.user_id = {$userId}";
-			# output the new query
-			$queryData['joins'] = array(array(
-				'table' => 'used',
-				'alias' => 'Used',
-				'type' => 'INNER',
-				'conditions' => array(
-				"Used.foreign_key = {$model->alias}.id",
-				"Used.model = '{$model->alias}'",
-				$userQuery,
-				),
-			));
-		//endif;
-		return $queryData;
-	}
-	
-	/**
-	 * Callback used to save related users, into the used table, with the proper relationship.
-	 */
-	function afterSave(&$Model, $created) {		
-		# this is if we have a hasMany list of users coming in.
-		if (!empty($Model->data['User'][0])) :
-			foreach ($Model->data['User'] as $user) :
-				#$users[]['id'] = $user['user_id']; // before cakephp 2.0 upgrade
-				$users[]['id'] = $user['id'];
-			endforeach;
-		endif;
-		
-		# this is if we have a habtm list of users coming in.
-		if (!empty($this->userData['User']['User'][0])) :
-			foreach ($this->userData['User']['User'] as $userId) :
-				$users[]['id'] = $userId;
-			endforeach;
-		endif;
-		
-		# this is if its a user group we need to look up.
-		if (!empty($Model->data[$Model->alias]['user_group_id'])) :
-			# add all of the team members to the used table 
-			$userGroups = $Model->UserGroup->find('all', array(
-				'conditions' => array(
-					'UserGroup.id' => $Model->data[$Model->alias]['user_group_id'],
-					),
-				'contain' => array(
-					'User',
-					),
-				));
-			foreach ($userGroups as $userGroup) :
-				if(!empty($userGroup['User'])) : 
-					$users = !empty($users) ? array_merge($userGroup['User'], $users) : $userGroup['User'];
-				endif;
-			endforeach;
-		endif;
-		
-		if (!empty($users)) :
-			$i=0;
-			foreach ($users as $user) : 
-				$data[$i]['Used']['user_id'] = $user['id'];
-				$data[$i]['Used']['foreign_key'] = $Model->id;
-				$data[$i]['Used']['model'] = $Model->alias;
-				$data[$i]['Used']['role'] = $this->defaultRole; // this is temporary, until we start doing real acl 
-				$i++;
-			endforeach;
-			
-			$Used = ClassRegistry::init('Users.Used');
-			foreach ($data as $dat) : 
-				$Used->create();
-				$Used->save($dat);
-			endforeach;
-		endif;
-	}
-	
 
 
-    function getFileExtension($filepath) 
-    { 
-        preg_match('/[^?]*/', $filepath, $matches); 
-        $string = $matches[0]; 
-      
-        $pattern = preg_split('/\./', $string, -1, PREG_SPLIT_OFFSET_CAPTURE); 
 
-        # check if there is any extension 
-        if(count($pattern) == 1) 
-        { 
-            return FALSE; 
-        } 
-        
-        if(count($pattern) > 1) 
-        { 
-            $filenamepart = $pattern[count($pattern)-1][0]; 
-            preg_match('/[^?]*/', $filenamepart, $matches); 
+    function getFileExtension($filepath)
+    {
+        preg_match('/[^?]*/', $filepath, $matches);
+        $string = $matches[0];
+
+        $pattern = preg_split('/\./', $string, -1, PREG_SPLIT_OFFSET_CAPTURE);
+
+        # check if there is any extension
+        if(count($pattern) == 1)
+        {
+            return FALSE;
+        }
+
+        if(count($pattern) > 1)
+        {
+            $filenamepart = $pattern[count($pattern)-1][0];
+            preg_match('/[^?]*/', $filenamepart, $matches);
             return strtolower($matches[0]);
-        } 
-    } 
-    
-    function getFileName($filepath) 
-    { 
-        preg_match('/[^?]*/', $filepath, $matches); 
-        $string = $matches[0]; 
-        #split the string by the literal dot in the filename 
-        $pattern = preg_split('/\./', $string, -1, PREG_SPLIT_OFFSET_CAPTURE); 
-        #get the last dot position 
-        $lastdot = $pattern[count($pattern)-1][1]; 
-        #now extract the filename using the basename function 
-        $filename = basename(substr($string, 0, $lastdot-1)); 
-        #return the filename part 
-        return $filename; 
-    } 
+        }
+    }
 
-	
+    function getFileName($filepath)
+    {
+        preg_match('/[^?]*/', $filepath, $matches);
+        $string = $matches[0];
+        #split the string by the literal dot in the filename
+        $pattern = preg_split('/\./', $string, -1, PREG_SPLIT_OFFSET_CAPTURE);
+        #get the last dot position
+        $lastdot = $pattern[count($pattern)-1][1];
+        #now extract the filename using the basename function
+        $filename = basename(substr($string, 0, $lastdot-1));
+        #return the filename part
+        return $filename;
+    }
+
+
+
 }//class{}
