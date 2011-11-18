@@ -73,6 +73,12 @@ class EncodableBehavior extends ModelBehavior {
                 
 
 		if($fileSavedLocally) {
+                    
+                        // set the Media.type (audio|video)
+                        if(in_array($fileExtension, $this->supportedAudioExtensions)) $mediaType = 'audio';
+                        elseif(in_array($fileExtension, $this->supportedVideoExtensions)) $mediaType = 'video';
+                        $model->data['Media']['type'] = $mediaType;
+                    
 			// send the file to the encoder
 			$encoder = new $this->type();
 			$response = $encoder->save($model->data);
@@ -98,12 +104,6 @@ class EncodableBehavior extends ModelBehavior {
 
 			#debug($response['outputs']['id']);
 			#debug($model->data['Media']['zen_output_id']);
-
-                        
-                        // set the Media.type (audio|video)
-                        if(in_array($fileExtension, $this->supportedAudioExtensions)) $mediaType = 'audio';
-                        elseif(in_array($fileExtension, $this->supportedVideoExtensions)) $mediaType = 'video';
-                        $model->data['Media']['type'] = $mediaType;
                         
                         
                         /* proposing that Media.filename is just an array of
