@@ -54,6 +54,7 @@ class EncodableBehavior extends ModelBehavior {
 
                 // this will be the base of the filename of the media file that we store locally and send to the encoder
 		$model->data['Media']['safeFileName'] = $uuid;
+                $model->data['Media']['id'] = $uuid;
 
 
 		if($uploadedFile) {
