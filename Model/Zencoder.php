@@ -78,16 +78,18 @@ class Zencoder extends AppModel {
 
 			$requestParams['outputs'] = array( // An array or hash of output settings.
 					array( // output version 1
-						'label' => 'videoWeb',
+						'label' => 'mp4',
 						'url' => $_MEDIA_SERVER . $data['Media']['safeFileName'] . '.mp4', // destination of the encoded file
 						'notifications' => array('format' => 'json', 'url' => 'http://' . $_SERVER['HTTP_HOST'] . '/media/media/notification')
 					),
-	//				array( // output version 2
+					array( // output version 2
+						'label' => 'webm',
+						'url' => $_MEDIA_SERVER . $data['Media']['safeFileName'] . '.webm', // destination of the encoded file
+						'notifications' => array('format' => 'json', 'url' => 'http://' . $_SERVER['HTTP_HOST'] . '/media/media/notification')
+					),
+	//				array( // output version 3
 	//					'label' => 'dvd',
 	//				),
-	//				array( // output version 3
-	//					'label' => 'mobile'
-	//				)
 			);
 
 
