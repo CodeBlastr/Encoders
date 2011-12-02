@@ -52,7 +52,7 @@ class Zencoder extends AppModel {
 	public function save($data) {
 		#debug($data);break;
 
-		$_MEDIA_SERVER = Configure::read('Media.mediaserver');
+		$_MEDIA_SERVER = $thumbNailServer = Configure::read('Media.mediaserver');
 		$integrationMode = Configure::read('Media.integrationMode');
 
 		$requestParams = array( // see: https://app.zencoder.com/docs/api/encoding/general-output-settings
@@ -75,12 +75,18 @@ class Zencoder extends AppModel {
 		if($data['Media']['type'] == 'video') {
 
 			$_MEDIA_SERVER .= basename(ROOT).DS.SITE_DIR.DS.'View'.DS.'Themed'.DS.'Default'.DS.WEBROOT_DIR.DS.'media'.DS . 'streams'. DS .'video' . DS ;
+                        $thumbNailServer .= basename(ROOT).DS.SITE_DIR.DS.'View'.DS.'Themed'.DS.'Default'.DS.WEBROOT_DIR.DS.'media'.DS . 'thumbs'. DS ;
 
 			$requestParams['outputs'] = array( // An array or hash of output settings.
 					array( // output version 1
 						'label' => 'mp4',
 						'url' => $_MEDIA_SERVER . $data['Media']['safeFileName'] . '.mp4', // destination of the encoded file
-						'notifications' => array('format' => 'json', 'url' => 'http://' . $_SERVER['HTTP_HOST'] . '/media/media/notification')
+						'notifications' => array('format' => 'json', 'url' => 'http://' . $_SERVER['HTTP_HOST'] . '/media/media/notification'),
+                                                'thumbnails' => array(
+                                                    'number' => '5',
+                                                    'prefix' => $data['Media']['safeFileName'],
+                                                    'base_url' => $thumbNailServer
+                                                )
 					),
 					array( // output version 2
 						'label' => 'webm',
