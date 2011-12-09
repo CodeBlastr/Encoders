@@ -83,9 +83,19 @@ class Zencoder extends AppModel {
 						'url' => $_MEDIA_SERVER . $data['Media']['safeFileName'] . '.mp4', // destination of the encoded file
 						'notifications' => array('format' => 'json', 'url' => 'http://' . $_SERVER['HTTP_HOST'] . '/media/media/notification'),
                                                 'thumbnails' => array(
-                                                    'number' => '5',
-                                                    'prefix' => $data['Media']['safeFileName'],
-                                                    'base_url' => $thumbNailServer
+                                                    array(
+                                                      'format' => 'jpg',
+                                                      'number' => '5',
+                                                      'prefix' => $data['Media']['safeFileName'],
+                                                      'base_url' => $thumbNailServer
+                                                    ),
+                                                    array(
+                                                      'format' => 'jpg',
+                                                      'number' => '1',
+                                                      'size' => '144x91',
+                                                      'prefix' => $data['Media']['safeFileName'].'_thumb',
+                                                      'base_url' => $thumbNailServer
+                                                    )
                                                 )
 					),
 					array( // output version 2
