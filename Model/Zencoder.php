@@ -115,7 +115,7 @@ class Zencoder extends AppModel {
 
 			$requestParams['outputs'] = array( // An array or hash of output settings.
 					array( // output version 1
-						'label' => 'audioWeb',
+						'label' => 'mp3',
 						'url' => $_MEDIA_SERVER . $data['Media']['safeFileName'] . '.mp3', // destination of the encoded file
 						'notifications' => array('format' => 'json', 'url' => 'http://' . $_SERVER['HTTP_HOST'] . '/media/media/notification')
 					),
