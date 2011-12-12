@@ -23,7 +23,6 @@ class EncodableBehavior extends ModelBehavior {
 		#debug($model->data);break;
 		
 		$supportedExtensions = array_merge($this->supportedVideoExtensions, $this->supportedAudioExtensions);
-
 		if(!empty($model->data['Media']['submittedfile']['size'])) {
 			unset($model->data['Media']['submittedurl']);                        
 			$uploadedFile = true;
@@ -67,47 +66,43 @@ class EncodableBehavior extends ModelBehavior {
                 
 
 		if(!empty($fileSavedLocally)) {
-			// set the Media.type (audio|video)
+			# set the Media.type (audio|video)
 			if(in_array($fileExtension, $this->supportedAudioExtensions)) $mediaType = 'audio';	
 			elseif(in_array($fileExtension, $this->supportedVideoExtensions)) $mediaType = 'video';
 			$model->data['Media']['type'] = $mediaType;
 			                    
-			// send the file to the encoder
+			# send the file to the encoder
 			$encoder = new $this->type();
 			$response = $encoder->save($model->data);
 
-			#debug($response);
-			// set the data we received from the encoder
+			//debug($response);
+			# set the data we received from the encoder
 			$model->data['Media']['zen_job_id'] = $response['id'];
-			if( isset($response['outputs'][1]) ) {
-				// we have multiple output formats
+			if(!empty($response['outputs'][1]) ) {
+				# we have multiple output formats
+				$model->data['Media']['zen_output_id'] = !empty($model->data['Media']['zen_output_id']) ? $model->data['Media']['zen_output_id'] : null;
 				foreach($response['outputs'] as $output) {
 					$model->data['Media']['zen_output_id'] .= $output['id'] . ',';
-                                        // ... or ...
-                                        $outputs[] = array('label' => $output['label'], 'zen_output_id' => $output['id']);
+                    // ... or ...
+					$outputs[] = array('label' => $output['label'], 'zen_output_id' => $output['id']);
 				}
 				$model->data['Media']['zen_output_id'] = rtrim($model->data['Media']['zen_output_id'], ',');
-			} else {
-				// we just have one output format
+				$model->data['Media']['filename'] = json_encode(array('outputs' => $outputs));
+			} elseif(!empty($response['outputs'][0])) {
+				# we just have one output format
 				$model->data['Media']['zen_output_id'] = $response['outputs'][0]['id'];
-                                // ... or ...
-                $outputs = array('label' => $response['outputs'][0]['label'], 'zen_output_id' => $response['outputs'][0]['id']);
+				// ... or ...
+				$outputs = array('label' => $response['outputs'][0]['label'], 'zen_output_id' => $response['outputs'][0]['id']);
+				$model->data['Media']['filename'] = json_encode(array('outputs' => $outputs));
+			} else {
+				# the response was empty, but save data anyway (for now)
+				$model->data['Media']['filename'] = $uuid;
 			}
-
-			#debug($response['outputs']['id']);
-			#debug($model->data['Media']['zen_output_id']);
-            
-			/* proposing that Media.filename is just an array of
-			* the label (audioWeb|videoWeb), id (outputID), and encoded file extension
-			* for each outputted file.
-			*/
-			$model->data['Media']['filename'] = json_encode(array(
-				'outputs' => $outputs
-				));
+			
 			return $model->data;
 		} elseif(!empty($model->data['Media']['submittedurl'])) {
 			
-			// send the file to the encoder
+			# send the file to the encoder
 			$encoder = new $this->type();
 			$response = $encoder->save($model->data);
 			
