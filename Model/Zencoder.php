@@ -71,11 +71,11 @@ class Zencoder extends AppModel {
 			$requestParams['mock'] = 'true'; // Send a mocked job request. (return data but don't process)
 			$requestParams['test'] = 1; // Enable test mode ("Integration Mode") for a job.
 		}
-		
+
 		if($data['Media']['type'] == 'video') {
 			$_MEDIA_SERVER .= basename(ROOT).DS.SITE_DIR.DS.'View'.DS.'Themed'.DS.'Default'.DS.WEBROOT_DIR.DS.'media'.DS . 'streams'. DS .'video' . DS ;
 			$thumbNailServer .= basename(ROOT).DS.SITE_DIR.DS.'View'.DS.'Themed'.DS.'Default'.DS.WEBROOT_DIR.DS.'media'.DS . 'thumbs'. DS ;
-			
+
 			$requestParams['outputs'] = array( // An array or hash of output settings
 				array( // output version 1
 					'label' => 'mp4',
@@ -88,14 +88,16 @@ class Zencoder extends AppModel {
 								'format' => 'jpg',
 								'number' => '5',
 								'prefix' => $data['Media']['safeFileName'],
-								'base_url' => $thumbNailServer
+								'base_url' => $thumbNailServer,
+                                'label' => 'poster'
 								),
 							array(
 								'format' => 'jpg',
 								'number' => '1',
 								'size' => '144x91',
 								'prefix' => $data['Media']['safeFileName'].'_thumb',
-								'base_url' => $thumbNailServer
+								'base_url' => $thumbNailServer,
+                                'label' => 'thumb'
 								)
 							)
 						),
