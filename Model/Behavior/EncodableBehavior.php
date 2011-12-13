@@ -1,7 +1,8 @@
 <?php
 App::uses('Zencoder', 'Encoders.Model');
+
 /**
- * @author <joel@razorit.com>
+ * @todo		This behavior should handle encoding only, not the file management.  Thats what the media plugin is for.
  */
 class EncodableBehavior extends ModelBehavior {
 
@@ -18,6 +19,9 @@ class EncodableBehavior extends ModelBehavior {
 	}
 
 
+/**
+ * @todo			This needs to be broken up into a few smaller functions.  (like handle the moving of files separately, and so on.
+ */
 	function beforeSave(&$model) { #override fields before Media model saves it
 		$uuid = $model->_generateUUID(); /** @todo Perhaps this should be in the Encoder Model instead.. */
 		#debug($model->data);break;
