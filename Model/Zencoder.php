@@ -72,9 +72,9 @@ class Zencoder extends AppModel {
 			$requestParams['test'] = 1; // Enable test mode ("Integration Mode") for a job.
 		}
 
-		if($data['Media']['type'] == 'video') {
-			$_MEDIA_SERVER .= basename(ROOT).DS.SITE_DIR.DS.'View'.DS.'Themed'.DS.'Default'.DS.WEBROOT_DIR.DS.'media'.DS . 'streams'. DS .'video' . DS ;
-			$thumbNailServer .= basename(ROOT).DS.SITE_DIR.DS.'View'.DS.'Themed'.DS.'Default'.DS.WEBROOT_DIR.DS.'media'.DS . 'thumbs'. DS ;
+		if($data['Media']['type'] == 'videos') {
+			$_MEDIA_SERVER .= basename(ROOT).DS.SITE_DIR.DS.'View'.DS.'Themed'.DS.'Default'.DS.WEBROOT_DIR.DS.'media'.DS . strtolower(pluginize($data['Media']['model'])). DS . 'videos'. DS ;
+			$thumbNailServer .= basename(ROOT).DS.SITE_DIR.DS.'View'.DS.'Themed'.DS.'Default'.DS.WEBROOT_DIR.DS.'media'.DS . strtolower(pluginize($data['Media']['model'])) . DS . 'images' . DS . 'thumbs'. DS ;
 
 			$requestParams['outputs'] = array( // An array or hash of output settings
 				array( // output version 1
@@ -112,7 +112,7 @@ class Zencoder extends AppModel {
 			);
 
 		} elseif($data['Media']['type'] == 'audio') {
-			$_MEDIA_SERVER .= basename(ROOT).DS.SITE_DIR.DS.'View'.DS.'Themed'.DS.'Default'.DS.WEBROOT_DIR.DS.'media'.DS.'streams' . DS .'audio' . DS ;
+			$_MEDIA_SERVER .= basename(ROOT).DS.SITE_DIR.DS.'View'.DS.'Themed'.DS.'Default'.DS.WEBROOT_DIR.DS.'media'.DS . strtolower(pluginize($data['Media']['model'])). DS . 'audio' . DS ;
 			$requestParams['outputs'] = array( // An array or hash of output settings.
 				array( // output version 1
 					'label' => 'mp3',
