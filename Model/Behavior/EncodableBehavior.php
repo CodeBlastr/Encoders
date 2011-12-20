@@ -22,7 +22,7 @@ class EncodableBehavior extends ModelBehavior {
 /**
  * @todo			This needs to be broken up into a few smaller functions.  (like handle the moving of files separately, and so on.
  */
-	function beforeSave(&$model) { #override fields before Media model saves it
+	function encode(&$model) { #override fields before Media model saves it
 		$uuid = $model->_generateUUID(); /** @todo Perhaps this should be in the Encoder Model instead.. */
 		#debug($model->data);break;
 
@@ -51,29 +51,37 @@ class EncodableBehavior extends ModelBehavior {
 		// this will be the base of the filename of the media file that we store locally and send to the encoder
 		$model->data['Media']['safeFileName'] = $uuid;
 		$model->data['Media']['id'] = $uuid;
+		
 
 		if(!empty($uploadedFile)) {
 			// create new filetype-based upload directory if it doesn't exist and save the uploaded file locally
-			$uploadDirectory = ROOT.DS.SITE_DIR.DS.'View'.DS.'Themed'.DS.'Default'.DS.WEBROOT_DIR . DS . 'media' . DS . 'uploads' . DS . $fileExtension;
+			$uploadDirectory = ROOT.DS.SITE_DIR.DS.'View'.DS.'Themed'.DS.'Default'.DS.WEBROOT_DIR . DS . 'media' . DS . strtolower(pluginize($model->data['Media']['model'])). DS . $model->data['Media']['type'];
 			if(!is_dir($uploadDirectory)) {
 				mkdir($uploadDirectory, 0777);
 			}
 			$fileSavedLocally = rename($model->data['Media']['filename']['tmp_name'], $uploadDirectory . DS . $uuid.'.'.$fileExtension);
 
 			// set the Public URL of the local file so that the encoder can download it
-			$model->data['Media']['publicMediaFilePath'] = 'http://' . $_SERVER['HTTP_HOST'] . '/theme/default/media/uploads/' . $fileExtension . '/' . $uuid.'.'.$fileExtension;
+			$model->data['Media']['publicMediaFilePath'] = 'http://' . $_SERVER['HTTP_HOST'] . '/theme/default/media/'.strtolower(pluginize($model->data['Media']['model'])).'/' .  $model->data['Media']['type'] . '/' . $uuid.'.'.$fileExtension;
 
 		} else {
 			// set the Public URL of the remote file so that the encoder can download it
 			$model->data['Media']['publicMediaFilePath'] = $model->data['Media']['submittedurl'];
 		}
+		
+		$model->data['Media']['filename'] = $model->data['Media']['safeFileName'];
+		$model->data['Media']['extension'] = $fileExtension;
 
 
 		if(!empty($fileSavedLocally)) {
 			# set the Media.type (audio|video)
-			if(in_array($fileExtension, $this->supportedAudioExtensions)) $mediaType = 'audio';
-			elseif(in_array($fileExtension, $this->supportedVideoExtensions)) $mediaType = 'video';
+			if(in_array($fileExtension, $this->supportedAudioExtensions)) { 
+				$mediaType = 'audio';
+			} elseif(in_array($fileExtension, $this->supportedVideoExtensions)) {
+				$mediaType = 'videos';
+			}
 			$model->data['Media']['type'] = $mediaType;
+			
 
 			# send the file to the encoder
 			$encoder = new $this->type();
@@ -92,6 +100,7 @@ class EncodableBehavior extends ModelBehavior {
 				}
 				$model->data['Media']['zen_output_id'] = rtrim($model->data['Media']['zen_output_id'], ',');
 				$model->data['Media']['filename'] = json_encode(array('outputs' => $outputs));
+				
 			} elseif(!empty($response['outputs'][0])) {
 				# we just have one output format
 				$model->data['Media']['zen_output_id'] = $response['outputs'][0]['id'];
@@ -103,16 +112,18 @@ class EncodableBehavior extends ModelBehavior {
 				$model->data['Media']['filename'] = $uuid;
 			}
 
+           # debug($model->data);break;
 			return $model->data;
+            
 		} elseif(!empty($model->data['Media']['submittedurl'])) {
 
 			# send the file to the encoder
 			$encoder = new $this->type();
 			$response = $encoder->save($model->data);
 
-			return true;
+			return $model->data;
 		} else {
-			return false;
+			return $model->data;
 		}
 
 	}//beforeSave()
@@ -138,6 +149,8 @@ class EncodableBehavior extends ModelBehavior {
             return strtolower($matches[0]);
         }
     }
+
+
 
     function getFileName($filepath) {
         preg_match('/[^?]*/', $filepath, $matches);
