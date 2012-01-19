@@ -55,14 +55,14 @@ class EncodableBehavior extends ModelBehavior {
 
 		if(!empty($uploadedFile)) {
 			// create new filetype-based upload directory if it doesn't exist and save the uploaded file locally
-			$uploadDirectory = ROOT.DS.SITE_DIR.DS.'View'.DS.'Themed'.DS.'Default'.DS.WEBROOT_DIR . DS . 'media' . DS . strtolower(pluginize($model->data['Media']['model'])). DS . $model->data['Media']['type'];
+			$uploadDirectory = ROOT.DS.SITE_DIR.DS.'View'.DS.'Themed'.DS.'Default'.DS.WEBROOT_DIR . DS . 'media' . DS . strtolower(ZuhaInflector::pluginize($model->data['Media']['model'])). DS . $model->data['Media']['type'];
 			if(!is_dir($uploadDirectory)) {
 				mkdir($uploadDirectory, 0777);
 			}
 			$fileSavedLocally = rename($model->data['Media']['filename']['tmp_name'], $uploadDirectory . DS . $uuid.'.'.$fileExtension);
 
 			// set the Public URL of the local file so that the encoder can download it
-			$model->data['Media']['publicMediaFilePath'] = 'http://' . $_SERVER['HTTP_HOST'] . '/theme/default/media/'.strtolower(pluginize($model->data['Media']['model'])).'/' .  $model->data['Media']['type'] . '/' . $uuid.'.'.$fileExtension;
+			$model->data['Media']['publicMediaFilePath'] = 'http://' . $_SERVER['HTTP_HOST'] . '/theme/default/media/'.strtolower(ZuhaInflector::pluginize($model->data['Media']['model'])).'/' .  $model->data['Media']['type'] . '/' . $uuid.'.'.$fileExtension;
 
 		} else {
 			// set the Public URL of the remote file so that the encoder can download it

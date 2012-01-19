@@ -73,8 +73,8 @@ class Zencoder extends AppModel {
 		}
 
 		if($data['Media']['type'] == 'videos') {
-			$_MEDIA_SERVER .= basename(ROOT).DS.SITE_DIR.DS.'View'.DS.'Themed'.DS.'Default'.DS.WEBROOT_DIR.DS.'media'.DS . strtolower(pluginize($data['Media']['model'])). DS . 'videos'. DS ;
-			$thumbNailServer .= basename(ROOT).DS.SITE_DIR.DS.'View'.DS.'Themed'.DS.'Default'.DS.WEBROOT_DIR.DS.'media'.DS . strtolower(pluginize($data['Media']['model'])) . DS . 'images' . DS . 'thumbs'. DS ;
+			$_MEDIA_SERVER .= basename(ROOT).DS.SITE_DIR.DS.'View'.DS.'Themed'.DS.'Default'.DS.WEBROOT_DIR.DS.'media'.DS . strtolower(ZuhaInflector::pluginize($data['Media']['model'])). DS . 'videos'. DS ;
+			$thumbNailServer .= basename(ROOT).DS.SITE_DIR.DS.'View'.DS.'Themed'.DS.'Default'.DS.WEBROOT_DIR.DS.'media'.DS . strtolower(ZuhaInflector::pluginize($data['Media']['model'])) . DS . 'images' . DS . 'thumbs'. DS ;
 
 			$requestParams['outputs'] = array( // An array or hash of output settings
 				array( // output version 1
@@ -112,7 +112,7 @@ class Zencoder extends AppModel {
 			);
 
 		} elseif($data['Media']['type'] == 'audio') {
-			$_MEDIA_SERVER .= basename(ROOT).DS.SITE_DIR.DS.'View'.DS.'Themed'.DS.'Default'.DS.WEBROOT_DIR.DS.'media'.DS . strtolower(pluginize($data['Media']['model'])). DS . 'audio' . DS ;
+			$_MEDIA_SERVER .= basename(ROOT).DS.SITE_DIR.DS.'View'.DS.'Themed'.DS.'Default'.DS.WEBROOT_DIR.DS.'media'.DS . strtolower(ZuhaInflector::pluginize($data['Media']['model'])). DS . 'audio' . DS ;
 			$requestParams['outputs'] = array( // An array or hash of output settings.
 				array( // output version 1
 					'label' => 'mp3',
