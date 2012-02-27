@@ -3,7 +3,6 @@
  * This is a recreation of the Zencoder.com API v2.
  * Every available API request is presented here.
  *
- * @author   <joel@razorit.com>
  *
  * @link https://app.zencoder.com/docs
  */
